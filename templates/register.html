@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg">
+
+<div class="center-box">
+<h2>Registration</h2>
+
+<form method="POST">
+
+<select name="role" required>
+    <option value="user">User Registration</option>
+    <option value="admin">Admin Registration</option>
+</select>
+
+<input name="fname" placeholder="First Name" required>
+<input name="lname" placeholder="Last Name" required>
+<input name="contact" placeholder="10 digit Contact Number" required>
+<input type="email" name="email" placeholder="Email (gmail / yahoo)" required>
+
+<input type="password" name="password" placeholder="New Password" required>
+<input type="password" name="confirm_password" placeholder="Confirm Password" required>
+
+<button>Register</button>
+
+<p style="color:red;">
+{{ get_flashed_messages()[0] if get_flashed_messages() else "" }}
+</p>
+
+<a href="/">Already registered? Login</a>
+</form>
+</div>
+
+</body>
+</html>

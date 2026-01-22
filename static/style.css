@@ -1,0 +1,191 @@
+body.bg {
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(to right, #25c6ff, #00e5ff);
+}
+
+/* ================= LOGIN CENTER BOX ================= */
+
+.center-box {
+    background: white;
+    width: 360px;
+    margin: 120px auto;
+    padding: 25px 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.center-box h2 {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.center-box input,
+.center-box select {
+    width: 100%;
+    padding: 9px;
+    margin: 10px 0;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.center-box button {
+    width: 100%;
+    padding: 10px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-top: 10px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.center-box button:hover {
+    background: #2980b9;
+}
+
+.error {
+    color: red;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Centered Forgot Password & Signup */
+.auth-links {
+    text-align: center;
+    margin-top: 12px;
+}
+
+.auth-links a {
+    display: block;
+    margin: 6px 0;
+    text-decoration: none;
+    color: #4b0082;
+    font-size: 14px;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* ================= ADMIN + DASHBOARD ================= */
+
+.top-bar {
+    background: #2c3e50;
+    padding: 15px 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logout-btn {
+    background: red;
+    padding: 8px 12px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.page-content {
+    padding: 30px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 10px;
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+}
+
+.assign-btn {
+    width: 100%;
+    padding: 10px;
+    background: #3498db;
+    border: none;
+    color: white;
+    font-size: 15px;
+    border-radius: 5px;
+}
+
+/* ================= TABLE ================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #3498db;
+    color: white;
+    padding: 10px;
+}
+
+td {
+    padding: 10px;
+    text-align: center;
+}
+
+.action-btns {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-update {
+    padding: 6px 10px;
+    background: orange;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.btn-delete {
+    padding: 6px 10px;
+    background: red;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.btn-update:hover {
+    background: #e67e22;
+}
+
+.btn-delete:hover {
+    background: darkred;
+}
+
+/* ================= MULTI USER CHECKBOX UI ================= */
+
+.user-list {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 5px;
+    background: #f9f9f9;
+}
+
+.user-checkbox {
+    display: block;
+    padding: 6px 8px;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.user-checkbox input {
+    margin-right: 8px;
+    transform: scale(1.1);
+}

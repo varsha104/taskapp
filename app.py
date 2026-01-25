@@ -3,10 +3,20 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from datetime import datetime, date
 import re
+import os
 
 app = Flask(__name__)
 app.secret_key = "secret123"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
+# ✅ FIX: Use PostgreSQL on Render, SQLite locally
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -33,7 +43,7 @@ class Task(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', foreign_keys=[user_id])
 
-    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))   # ✅ Track which admin assigned
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     admin = db.relationship('User', foreign_keys=[admin_id])
 
 # ================= LOGIN =================
@@ -56,7 +66,7 @@ def login():
 
             if role == "admin":
                 session['admin'] = True
-                session['admin_id'] = user.id  # ✅ Save admin id
+                session['admin_id'] = user.id
                 return redirect("/admin")
             else:
                 return redirect("/dashboard")
@@ -138,7 +148,6 @@ def admin():
 
     users = User.query.filter_by(is_admin=False).all()
 
-    # MULTI USER TASK ASSIGNMENT
     if request.method == "POST":
         if request.form['deadline'] < str(date.today()):
             flash("Deadline cannot be past")
@@ -158,14 +167,13 @@ def admin():
                 deadline=request.form['deadline'],
                 completed_at="",
                 user_id=uid,
-                admin_id=session['admin_id']   # ✅ Save assigning admin
+                admin_id=session['admin_id']
             )
             db.session.add(task)
 
         db.session.commit()
         flash("Task assigned successfully to selected users")
 
-    # ✅ Only show tasks assigned by THIS admin
     tasks = Task.query.filter_by(admin_id=session['admin_id']).all()
     return render_template("admin.html", users=users, tasks=tasks)
 
@@ -177,7 +185,6 @@ def edit_task(id):
 
     task = Task.query.get_or_404(id)
 
-    # ✅ Prevent editing others' tasks
     if task.admin_id != session['admin_id']:
         flash("Unauthorized access")
         return redirect("/admin")
@@ -200,7 +207,6 @@ def delete_task(id):
 
     task = Task.query.get_or_404(id)
 
-    # ✅ Prevent deleting others' tasks
     if task.admin_id != session['admin_id']:
         flash("Unauthorized access")
         return redirect("/admin")

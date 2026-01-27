@@ -8,10 +8,13 @@ import os
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ✅ FIX: Use PostgreSQL on Render, SQLite locally
+# ================= DATABASE CONFIG =================
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
@@ -35,7 +38,7 @@ class User(db.Model):
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
-    status = db.Column(db.String(20))
+    status = db.Column(db.String(20), default="Pending")
     priority = db.Column(db.String(20))
     deadline = db.Column(db.String(20))
     completed_at = db.Column(db.String(50))
@@ -47,6 +50,7 @@ class Task(db.Model):
     admin = db.relationship('User', foreign_keys=[admin_id])
 
 # ================= LOGIN =================
+
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -75,6 +79,7 @@ def login():
     return render_template("login.html")
 
 # ================= REGISTER =================
+
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
@@ -103,7 +108,7 @@ def register():
             lname=request.form['lname'],
             contact=request.form['contact'],
             email=email,
-            password=bcrypt.generate_password_hash(request.form['password']),
+            password=bcrypt.generate_password_hash(request.form['password']).decode('utf-8'),
             is_admin=True if role == "admin" else False
         )
 
@@ -115,6 +120,7 @@ def register():
     return render_template("register.html")
 
 # ================= FORGOT PASSWORD =================
+
 @app.route("/forgot", methods=["GET","POST"])
 def forgot():
     if request.method == "POST":
@@ -132,7 +138,7 @@ def forgot():
             flash("Email not found")
             return redirect("/forgot")
 
-        user.password = bcrypt.generate_password_hash(new_pass)
+        user.password = bcrypt.generate_password_hash(new_pass).decode('utf-8')
         db.session.commit()
 
         flash("Password reset successful. Please login.")
@@ -141,6 +147,7 @@ def forgot():
     return render_template("forgot.html")
 
 # ================= ADMIN DASHBOARD =================
+
 @app.route("/admin", methods=["GET","POST"])
 def admin():
     if not session.get('admin'):
@@ -178,6 +185,7 @@ def admin():
     return render_template("admin.html", users=users, tasks=tasks)
 
 # ================= EDIT TASK =================
+
 @app.route("/edit_task/<int:id>", methods=["GET","POST"])
 def edit_task(id):
     if not session.get('admin'):
@@ -200,6 +208,7 @@ def edit_task(id):
     return render_template("edit_task.html", task=task)
 
 # ================= DELETE TASK =================
+
 @app.route("/delete_task/<int:id>")
 def delete_task(id):
     if not session.get('admin'):
@@ -217,6 +226,7 @@ def delete_task(id):
     return redirect("/admin")
 
 # ================= USER DASHBOARD =================
+
 @app.route("/dashboard")
 def dashboard():
     if 'user_id' not in session:
@@ -237,6 +247,7 @@ def dashboard():
     )
 
 # ================= MARK TASK DONE =================
+
 @app.route("/done/<int:id>")
 def done(id):
     if 'user_id' not in session:
@@ -249,17 +260,20 @@ def done(id):
         return redirect("/dashboard")
 
     task.status = "Done"
-    task.completed_at = str(datetime.now())
+    task.completed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
 
     flash("Task marked as Done")
     return redirect("/dashboard")
 
 # ================= LOGOUT =================
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
+
+# ================= MAIN =================
 
 if __name__ == "__main__":
     with app.app_context():

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg">
+
+<div class="center-box">
+<h2>Reset Password</h2>
+
+<form method="POST">
+
+<input type="email" name="email" placeholder="Enter your registered email" required>
+
+<input type="password" name="password" placeholder="New Password" required>
+
+<input type="password" name="confirm_password" placeholder="Confirm New Password" required>
+
+<button>Reset Password</button>
+
+<p class="error">
+{{ get_flashed_messages()[0] if get_flashed_messages() else "" }}
+</p>
+
+<a href="/">Back to Login</a>
+
+</form>
+</div>
+
+</body>
+</html>

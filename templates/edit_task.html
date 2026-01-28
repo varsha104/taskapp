@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg">
+
+<div class="center-box">
+<h2>Edit Task</h2>
+
+<form method="POST">
+
+<label>Task Title</label>
+<input type="text" name="title" value="{{ task.title }}" required>
+
+<label>Priority</label>
+<select name="priority">
+<option {% if task.priority=="High" %}selected{% endif %}>High</option>
+<option {% if task.priority=="Medium" %}selected{% endif %}>Medium</option>
+<option {% if task.priority=="Low" %}selected{% endif %}>Low</option>
+</select>
+
+<label>Deadline</label>
+<input type="date" name="deadline" value="{{ task.deadline }}" required>
+
+<button>Save Changes</button>
+<br><br>
+<a href="/admin">Back to Admin Dashboard</a>
+
+</form>
+</div>
+
+</body>
+</html>

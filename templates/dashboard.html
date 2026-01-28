@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg">
+
+<div class="top-bar">
+<h2>Welcome, {{ name }}</h2>
+<a href="/logout" class="logout-btn">Logout</a>
+</div>
+
+<div class="page-content">
+
+<!-- TASK LIST -->
+<div class="card">
+<h3>Your Assigned Tasks</h3>
+<table>
+<tr>
+<th>Task</th>
+<th>Status</th>
+<th>Priority</th>
+<th>Deadline</th>
+<th>Completed</th>
+<th>Action</th>
+</tr>
+
+{% for t in tasks %}
+<tr>
+<td>{{ t.title }}</td>
+<td>{{ t.status }}</td>
+<td>{{ t.priority }}</td>
+<td>{{ t.deadline }}</td>
+<td>{{ t.completed_at }}</td>
+
+<td>
+{% if t.status == "Done" %}
+    <button disabled style="background:gray;color:white;padding:6px 12px;border:none;border-radius:5px;">
+        Done
+    </button>
+{% else %}
+    <a href="/done/{{ t.id }}">
+        <button style="background:green;color:white;padding:6px 12px;border:none;border-radius:5px;cursor:pointer;">
+            Done
+        </button>
+    </a>
+{% endif %}
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- SUMMARY -->
+<div class="card">
+<h3>Task Summary</h3>
+<table>
+<tr>
+<th>Total</th>
+<th>Completed</th>
+<th>Pending</th>
+</tr>
+<tr>
+<td>{{ total }}</td>
+<td>{{ completed }}</td>
+<td>{{ pending }}</td>
+</tr>
+</table>
+</div>
+
+</div>
+</body>
+</html>

@@ -6,8 +6,8 @@
 <body class="bg">
 
 <div class="top-bar">
-<h2>Admin Dashboard – Assign / Manage Tasks</h2>
-<a href="/logout" class="logout-btn">Logout</a>
+    <h2>Admin Dashboard – Assign / Manage Tasks</h2>
+    <a href="/logout" class="logout-btn">Logout</a>
 </div>
 
 <div class="page-content">
@@ -17,22 +17,22 @@
 <h3>Assign Task to Users</h3>
 
 <form method="POST">
-<input type="hidden" name="action" value="assign">
 
 <h4>Select Users</h4>
 <table>
 <tr>
-<th>Select</th>
-<th>User</th>
+    <th>Select</th>
+    <th>User</th>
 </tr>
+
 {% for u in users %}
 <tr>
-<td>
-<input type="checkbox" name="user_ids" value="{{ u.id }}">
-</td>
-<td>
-{{ u.fname }} {{ u.lname }} ({{ u.email }})
-</td>
+    <td>
+        <input type="checkbox" name="user_ids" value="{{ u.id }}">
+    </td>
+    <td>
+        {{ u.fname }} {{ u.lname }} ({{ u.email }})
+    </td>
 </tr>
 {% endfor %}
 </table>
@@ -40,9 +40,9 @@
 <input name="title" placeholder="Task Title" required>
 
 <select name="priority">
-<option>High</option>
-<option>Medium</option>
-<option>Low</option>
+    <option>High</option>
+    <option>Medium</option>
+    <option>Low</option>
 </select>
 
 <input type="date" name="deadline" required>
@@ -52,29 +52,35 @@
 <p style="color:red">
 {{ get_flashed_messages()[0] if get_flashed_messages() else "" }}
 </p>
+
 </form>
 </div>
 
 <!-- ALL TASKS -->
 <div class="card">
 <h3>All Assigned Tasks</h3>
+
 <table>
 <tr>
-<th>User</th>
-<th>Task</th>
-<th>Status</th>
-<th>Priority</th>
-<th>Deadline</th>
-<th>Completed</th>
-<th>Actions</th>
+    <th>User</th>
+    <th>Task</th>
+    <th>Status</th>
+    <th>Priority</th>
+    <th>Deadline</th>
+    <th>Completed</th>
+    <th>Actions</th>
 </tr>
 
 {% for t in tasks %}
 <tr>
 
 <td>
-{{ t.user.fname }} {{ t.user.lname }}<br>
-<small>({{ t.user.email }})</small>
+    {% for u in users %}
+        {% if u.id == t.user_id %}
+            {{ u.fname }} {{ u.lname }}<br>
+            <small>({{ u.email }})</small>
+        {% endif %}
+    {% endfor %}
 </td>
 
 <td>{{ t.title }}</td>
@@ -85,14 +91,15 @@
 
 <td>
 <div class="action-btns">
-<a href="/edit_task/{{ t.id }}" class="btn-update">Update</a>
-<a href="/delete_task/{{ t.id }}" class="btn-delete">Delete</a>
+    <a href="/edit_task/{{ t.id }}" class="btn-update">Update</a>
+    <a href="/delete_task/{{ t.id }}" class="btn-delete">Delete</a>
 </div>
 </td>
 
 </tr>
 {% endfor %}
 </table>
+
 </div>
 
 </div>

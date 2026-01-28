@@ -1,25 +1,25 @@
 from flask import Flask, render_template, request, redirect, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from datetime import datetime, date
+from datetime import datetime
 import re
 import os
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ================= DATABASE CONFIG =================
+# ================= DATABASE CONFIG (POSTGRESQL ONLY) =================
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. PostgreSQL is required!")
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -27,15 +27,19 @@ bcrypt = Bcrypt(app)
 # ================= MODELS =================
 
 class User(db.Model):
+    __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
     fname = db.Column(db.String(50))
     lname = db.Column(db.String(50))
     contact = db.Column(db.String(10))
-    email = db.Column(db.String(100), unique=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200))
     is_admin = db.Column(db.Boolean, default=False)
 
 class Task(db.Model):
+    __tablename__ = "tasks"
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
     status = db.Column(db.String(20), default="Pending")
@@ -43,20 +47,20 @@ class Task(db.Model):
     deadline = db.Column(db.String(20))
     completed_at = db.Column(db.String(50))
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = db.relationship('User', foreign_keys=[user_id])
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    admin_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
-    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    admin = db.relationship('User', foreign_keys=[admin_id])
+    user = db.relationship("User", foreign_keys=[user_id])
+    admin = db.relationship("User", foreign_keys=[admin_id])
 
 # ================= LOGIN =================
 
-@app.route("/", methods=["GET","POST"])
+@app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        role = request.form['role']
-        email = request.form['email']
-        password = request.form['password']
+        role = request.form["role"]
+        email = request.form["email"]
+        password = request.form["password"]
 
         user = User.query.filter_by(
             email=email,
@@ -65,51 +69,48 @@ def login():
 
         if user and bcrypt.check_password_hash(user.password, password):
             session.clear()
-            session['name'] = user.fname
-            session['user_id'] = user.id
+            session["name"] = user.fname
+            session["user_id"] = user.id
 
             if role == "admin":
-                session['admin'] = True
-                session['admin_id'] = user.id
+                session["admin"] = True
+                session["admin_id"] = user.id
                 return redirect("/admin")
-            else:
-                return redirect("/dashboard")
+            return redirect("/dashboard")
 
-        flash("Invalid credentials for selected role")
+        flash("Invalid credentials")
     return render_template("login.html")
 
 # ================= REGISTER =================
 
-@app.route("/register", methods=["GET","POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
 
-        if request.form['password'] != request.form['confirm_password']:
+        if request.form["password"] != request.form["confirm_password"]:
             flash("Passwords do not match")
             return redirect("/register")
 
-        if not re.fullmatch(r"\d{10}", request.form['contact']):
+        if not re.fullmatch(r"\d{10}", request.form["contact"]):
             flash("Contact must be exactly 10 digits")
             return redirect("/register")
 
-        email = request.form['email']
-        if not (email.endswith("@gmail.com") or email.endswith("@yahoo.com")):
-            flash("Only Gmail and Yahoo emails are allowed")
-            return redirect("/register")
-
+        email = request.form["email"]
         if User.query.filter_by(email=email).first():
             flash("Email already exists")
             return redirect("/register")
 
-        role = request.form['role']
+        role = request.form["role"]
 
         user = User(
-            fname=request.form['fname'],
-            lname=request.form['lname'],
-            contact=request.form['contact'],
+            fname=request.form["fname"],
+            lname=request.form["lname"],
+            contact=request.form["contact"],
             email=email,
-            password=bcrypt.generate_password_hash(request.form['password']).decode('utf-8'),
-            is_admin=True if role == "admin" else False
+            password=bcrypt.generate_password_hash(
+                request.form["password"]
+            ).decode("utf-8"),
+            is_admin=True if role == "admin" else False,
         )
 
         db.session.add(user)
@@ -119,16 +120,16 @@ def register():
 
     return render_template("register.html")
 
-# ================= FORGOT PASSWORD =================
+# ================= FORGOT PASSWORD (✅ FIXED) =================
 
-@app.route("/forgot", methods=["GET","POST"])
+@app.route("/forgot", methods=["GET", "POST"])
 def forgot():
     if request.method == "POST":
-        email = request.form['email']
-        new_pass = request.form['password']
-        confirm = request.form['confirm_password']
+        email = request.form["email"]
+        new_password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
 
-        if new_pass != confirm:
+        if new_password != confirm_password:
             flash("Passwords do not match")
             return redirect("/forgot")
 
@@ -138,9 +139,11 @@ def forgot():
             flash("Email not found")
             return redirect("/forgot")
 
-        user.password = bcrypt.generate_password_hash(new_pass).decode('utf-8')
-        db.session.commit()
+        user.password = bcrypt.generate_password_hash(
+            new_password
+        ).decode("utf-8")
 
+        db.session.commit()
         flash("Password reset successful. Please login.")
         return redirect("/")
 
@@ -148,59 +151,47 @@ def forgot():
 
 # ================= ADMIN DASHBOARD =================
 
-@app.route("/admin", methods=["GET","POST"])
+@app.route("/admin", methods=["GET", "POST"])
 def admin():
-    if not session.get('admin'):
+    if not session.get("admin"):
         return redirect("/")
 
     users = User.query.filter_by(is_admin=False).all()
 
     if request.method == "POST":
-        if request.form['deadline'] < str(date.today()):
-            flash("Deadline cannot be past")
-            return redirect("/admin")
-
-        user_ids = request.form.getlist("user_ids")
-
-        if not user_ids:
-            flash("Please select at least one user")
-            return redirect("/admin")
-
-        for uid in user_ids:
+        for uid in request.form.getlist("user_ids"):
             task = Task(
-                title=request.form['title'],
-                status="Pending",
-                priority=request.form['priority'],
-                deadline=request.form['deadline'],
-                completed_at="",
+                title=request.form["title"],
+                priority=request.form["priority"],
+                deadline=request.form["deadline"],
                 user_id=uid,
-                admin_id=session['admin_id']
+                admin_id=session["admin_id"],
             )
             db.session.add(task)
 
         db.session.commit()
-        flash("Task assigned successfully to selected users")
+        flash("Task assigned successfully")
 
-    tasks = Task.query.filter_by(admin_id=session['admin_id']).all()
+    tasks = Task.query.filter_by(admin_id=session["admin_id"]).all()
     return render_template("admin.html", users=users, tasks=tasks)
 
 # ================= EDIT TASK =================
 
-@app.route("/edit_task/<int:id>", methods=["GET","POST"])
+@app.route("/edit_task/<int:id>", methods=["GET", "POST"])
 def edit_task(id):
-    if not session.get('admin'):
+    if not session.get("admin"):
         return redirect("/")
 
     task = Task.query.get_or_404(id)
 
-    if task.admin_id != session['admin_id']:
+    if task.admin_id != session.get("admin_id"):
         flash("Unauthorized access")
         return redirect("/admin")
 
     if request.method == "POST":
-        task.title = request.form['title']
-        task.priority = request.form['priority']
-        task.deadline = request.form['deadline']
+        task.title = request.form["title"]
+        task.priority = request.form["priority"]
+        task.deadline = request.form["deadline"]
         db.session.commit()
         flash("Task updated successfully")
         return redirect("/admin")
@@ -211,13 +202,13 @@ def edit_task(id):
 
 @app.route("/delete_task/<int:id>")
 def delete_task(id):
-    if not session.get('admin'):
+    if not session.get("admin"):
         return redirect("/")
 
     task = Task.query.get_or_404(id)
 
-    if task.admin_id != session['admin_id']:
-        flash("Unauthorized access")
+    if task.admin_id != session.get("admin_id"):
+        flash("Unauthorized action")
         return redirect("/admin")
 
     db.session.delete(task)
@@ -229,41 +220,25 @@ def delete_task(id):
 
 @app.route("/dashboard")
 def dashboard():
-    if 'user_id' not in session:
+    if "user_id" not in session:
         return redirect("/")
 
-    tasks = Task.query.filter_by(user_id=session['user_id']).all()
-
-    total = len(tasks)
-    completed = len([t for t in tasks if t.status == "Done"])
-    pending = len([t for t in tasks if t.status == "Pending"])
-
-    return render_template("dashboard.html",
-        tasks=tasks,
-        name=session['name'],
-        total=total,
-        completed=completed,
-        pending=pending
-    )
+    tasks = Task.query.filter_by(user_id=session["user_id"]).all()
+    return render_template("dashboard.html", tasks=tasks, name=session["name"])
 
 # ================= MARK TASK DONE =================
 
 @app.route("/done/<int:id>")
 def done(id):
-    if 'user_id' not in session:
-        return redirect("/")
-
     task = Task.query.get_or_404(id)
 
-    if task.user_id != session['user_id']:
-        flash("Unauthorized action")
+    if task.user_id != session.get("user_id"):
+        flash("Unauthorized")
         return redirect("/dashboard")
 
     task.status = "Done"
     task.completed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
-
-    flash("Task marked as Done")
     return redirect("/dashboard")
 
 # ================= LOGOUT =================
@@ -277,7 +252,5 @@ def logout():
 
 if __name__ == "__main__":
     with app.app_context():
-
-
         db.create_all()
     app.run(debug=True)

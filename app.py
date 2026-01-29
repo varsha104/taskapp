@@ -5,8 +5,10 @@ from datetime import datetime
 import re
 import os
 
+# ================= APP SETUP =================
+
 app = Flask(__name__)
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY", "secret123")
 
 # ================= DATABASE CONFIG (POSTGRESQL ONLY) =================
 
@@ -15,8 +17,9 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set. PostgreSQL is required!")
 
+# Fix old postgres:// issue (Render safe)
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -37,6 +40,7 @@ class User(db.Model):
     password = db.Column(db.String(200))
     is_admin = db.Column(db.Boolean, default=False)
 
+
 class Task(db.Model):
     __tablename__ = "tasks"
 
@@ -52,6 +56,16 @@ class Task(db.Model):
 
     user = db.relationship("User", foreign_keys=[user_id])
     admin = db.relationship("User", foreign_keys=[admin_id])
+
+# ================= DB HEALTH CHECK (IMPORTANT) =================
+
+@app.route("/health")
+def health():
+    try:
+        db.session.execute("SELECT 1")
+        return "DB CONNECTED OK"
+    except Exception as e:
+        return f"DB ERROR: {e}", 500
 
 # ================= LOGIN =================
 
@@ -76,9 +90,11 @@ def login():
                 session["admin"] = True
                 session["admin_id"] = user.id
                 return redirect("/admin")
+
             return redirect("/dashboard")
 
         flash("Invalid credentials")
+
     return render_template("login.html")
 
 # ================= REGISTER =================
@@ -115,21 +131,22 @@ def register():
 
         db.session.add(user)
         db.session.commit()
+
         flash("Registration successful")
         return redirect("/")
 
     return render_template("register.html")
 
-# ================= FORGOT PASSWORD (✅ FIXED) =================
+# ================= FORGOT PASSWORD =================
 
 @app.route("/forgot", methods=["GET", "POST"])
 def forgot():
     if request.method == "POST":
         email = request.form["email"]
-        new_password = request.form["password"]
+        password = request.form["password"]
         confirm_password = request.form["confirm_password"]
 
-        if new_password != confirm_password:
+        if password != confirm_password:
             flash("Passwords do not match")
             return redirect("/forgot")
 
@@ -139,11 +156,9 @@ def forgot():
             flash("Email not found")
             return redirect("/forgot")
 
-        user.password = bcrypt.generate_password_hash(
-            new_password
-        ).decode("utf-8")
-
+        user.password = bcrypt.generate_password_hash(password).decode("utf-8")
         db.session.commit()
+
         flash("Password reset successful. Please login.")
         return redirect("/")
 
@@ -193,6 +208,7 @@ def edit_task(id):
         task.priority = request.form["priority"]
         task.deadline = request.form["deadline"]
         db.session.commit()
+
         flash("Task updated successfully")
         return redirect("/admin")
 
@@ -213,6 +229,7 @@ def delete_task(id):
 
     db.session.delete(task)
     db.session.commit()
+
     flash("Task deleted successfully")
     return redirect("/admin")
 
@@ -239,6 +256,7 @@ def done(id):
     task.status = "Done"
     task.completed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.session.commit()
+
     return redirect("/dashboard")
 
 # ================= LOGOUT =================
@@ -248,9 +266,7 @@ def logout():
     session.clear()
     return redirect("/")
 
-# ================= MAIN =================
+# ================= LOCAL RUN ONLY =================
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
